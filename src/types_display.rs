@@ -4,8 +4,9 @@ use std::fmt;
 impl std::fmt::Display for ResourceType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            ResourceType::INTERVIEW => "INTERVIEW",
-            ResourceType::ANALYSIS => "ANALYSIS",
+            ResourceType::INTERVIEW => "Interview",
+            ResourceType::ANALYSIS => "Analysis",
+            ResourceType::StaffBlog => "Staff Blog",
         };
         write!(f, "{}", s)
     }

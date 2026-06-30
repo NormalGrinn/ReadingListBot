@@ -2,11 +2,9 @@ use std::time::Duration;
 
 use poise::CreateReply;
 use rusqlite::Result;
-use rust_fuzzy_search::fuzzy_compare;
-use serenity::futures;
-use ::serenity::futures::Stream;
+use serenity::futures::{self, Stream};
 
-use crate::{Context, Error, database::{self, get_anime_by_al_id, get_resources_for_anime}, helpers};
+use crate::{Context, Error, database::{self, get_anime_by_al_id, get_resources_for_anime}, helpers::{self, fuzzy_autocomplete}};
 
 struct EmbedResource {
     title: String,
@@ -31,25 +29,15 @@ async fn autocomplete_anime<'a>(
     ctx: Context<'_>,
     partial: &'a str,
 ) -> impl Stream<Item = String> + 'a {
-    let names = &ctx.data().anime_names;
-    let mut similarity_tuples: Vec<(String, f32)> = names
-        .iter()
-        .filter(|s| s.len() <= 100)
-        .map(|s| (s.clone(), fuzzy_compare(&partial.to_lowercase(), &s.to_lowercase())))
-        .collect();
-    similarity_tuples.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-    let guesses: Vec<String> = similarity_tuples
-        .into_iter()
-        .map(|(s, _)| s)
-        .take(25) 
-        .collect();
+    let guesses = fuzzy_autocomplete(&ctx.data().anime_names, partial);
     futures::stream::iter(guesses)
 }
+
 
 #[poise::command(prefix_command, track_edits, slash_command)]
 pub async fn show_anime(
     ctx: Context<'_>,
-    #[description = "The AniList ID of the anime"] 
+    #[description = "The name of the anime"] 
     #[autocomplete = "autocomplete_anime"]
     anime_name: String,
 ) -> Result<(), Error> {

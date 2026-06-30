@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize, Deserializer};
 #[derive(Debug, Serialize, Deserialize, ChoiceParameter)]
 pub enum ResourceType {
     INTERVIEW,
-    ANALYSIS
+    ANALYSIS,
+    StaffBlog,
 }
 
 

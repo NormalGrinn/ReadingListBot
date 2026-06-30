@@ -1,4 +1,5 @@
 use poise::CreateReply;
+use rust_fuzzy_search::fuzzy_compare;
 use serenity::builder::{CreateEmbed, CreateEmbedFooter};
 use serenity::model::colour::Colour;
 
@@ -89,5 +90,21 @@ pub fn build_resource_embeds(base_embed: &CreateEmbed, pages: &[String]) -> Vec<
                     pages.len()
                 )))
         })
+        .collect()
+}
+
+pub fn fuzzy_autocomplete<'a>(names: &[String], partial: &str) -> Vec<String> {
+    let mut similarity_tuples: Vec<(String, f32)> = names
+        .iter()
+        .filter(|s| s.len() <= 100)
+        .map(|s| (s.clone(), fuzzy_compare(&partial.to_lowercase(), &s.to_lowercase())))
+        .collect();
+
+    similarity_tuples.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    similarity_tuples
+        .into_iter()
+        .map(|(s, _)| s)
+        .take(25)
         .collect()
 }

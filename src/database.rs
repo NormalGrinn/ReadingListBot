@@ -191,3 +191,23 @@ pub fn get_english_and_romaji_titles(conn: &Connection) -> Result<Vec<String>, r
 
     Ok(titles)
 }
+
+pub fn get_resource_titles(conn: &Connection) -> Result<Vec<String>, rusqlite::Error> {
+    let mut stmt = conn.prepare("SELECT resource_title FROM resources;")?;
+    let rows = stmt.query_map([], |row| row.get(0))?;
+    rows.collect()
+}
+
+pub fn get_resource_id_by_name(conn: &Connection, name: &str) -> Result<Option<i32>, rusqlite::Error> {
+    let resource_id: Option<i32> = conn.query_row(
+        "SELECT resource_id FROM resources WHERE resource_title = ?1",
+        params![name],
+        |row| row.get(0),
+    ).optional()?;
+    Ok(resource_id)
+}
+
+pub fn get_resource_by_id(conn: &Connection, id: i32) -> Result<Resource, rusqlite::Error> {
+    
+    todo!()
+} 

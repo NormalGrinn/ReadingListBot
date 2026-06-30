@@ -19,7 +19,7 @@ CREATE TABLE people (
 CREATE TABLE resources (
     resource_id INTEGER PRIMARY KEY,
     link TEXT UNIQUE,
-    resource_title TEXT NOT NULL,
+    resource_title TEXT NOT NULL UNIQUE,
     resource_synopsis TEXT,
     resource_type TEXT NOT NULL,
     resource_language TEXT,
