@@ -14,6 +14,9 @@ query Query($mediaId: Int) {
     source
     synonyms
     id
+    coverImage {
+      medium
+    }
   }
 }
 "#;

@@ -34,7 +34,7 @@ pub async fn get_anime(id: i32) -> Result<Anime, Box<dyn std::error::Error + Sen
 
     let text = response.text().await?;
     let data: GraphQLResponse = serde_json::from_str(&text)?;
-
+    
     match data.data.media {
         Some(anime) => Ok(anime),
         None => Err("Anime not found (Media was null)".into()),

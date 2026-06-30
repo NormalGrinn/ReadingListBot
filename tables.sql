@@ -6,7 +6,8 @@ CREATE TABLE anime (
     season TEXT,
     seasonYear INTEGER,
     source TEXT,
-    synonyms TEXT
+    synonyms TEXT,
+    cover_image_small TEXT
 );
 
 CREATE TABLE people (

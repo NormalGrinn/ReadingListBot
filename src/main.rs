@@ -4,6 +4,8 @@ use poise::serenity_prelude as serenity;
 use dotenvy::dotenv;
 use tokio::sync::Mutex;
 
+use crate::database::get_english_and_romaji_titles;
+
 mod types;
 mod database;
 mod al_queries;
@@ -14,6 +16,7 @@ mod helpers;
 struct Data {
     pub db: Arc<Mutex<rusqlite::Connection>>,
     pub add_users: Vec<u64>,
+    pub anime_names: Vec<String>,
 } // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -27,6 +30,8 @@ async fn main() {
         .split(',')
         .filter_map(|id| id.trim().parse().ok())
         .collect();
+    let mut anime_names = get_english_and_romaji_titles(&conn).expect("Error fetching anime names");
+    anime_names.sort();
     let token = env::var("TOKEN")
         .expect("Missing `TOKEN` env var, see README for more information.");
     let intents =
@@ -35,7 +40,8 @@ async fn main() {
         | serenity::GatewayIntents::GUILD_MEMBERS;
     let data = Data {
         db: Arc::new(Mutex::new(conn)),
-        add_users
+        add_users,
+        anime_names
     };
 
     let framework = poise::Framework::builder()

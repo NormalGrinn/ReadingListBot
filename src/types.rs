@@ -1,5 +1,5 @@
 use poise::ChoiceParameter;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 
 #[derive(Debug, Serialize, Deserialize, ChoiceParameter)]
 pub enum ResourceType {
@@ -81,7 +81,9 @@ pub struct Anime {
     #[serde(rename = "seasonYear")]
     pub season_year: Option<i32>,
     pub source: Option<MediaSource>,
-    pub synonyms: Vec<String>
+    pub synonyms: Vec<String>,
+    #[serde(rename = "coverImage", deserialize_with = "deserialize_cover_image_small", default)]
+    pub cover_image_small: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -95,4 +97,18 @@ pub struct Resource {
     pub people: Vec<String>,
     pub related_media: Option<Vec<Media>>,
     pub tags: Vec<String>,
+}
+
+
+fn deserialize_cover_image_small<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    struct CoverImageHelper {
+        medium: Option<String>,
+    }
+
+    let helper: Option<CoverImageHelper> = Option::deserialize(deserializer)?;
+    Ok(helper.and_then(|h| h.medium))
 }

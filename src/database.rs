@@ -1,4 +1,4 @@
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension, params};
 use crate::types::{Anime, Language, Resource, ResourceType, Title};
 
 pub fn insert_anime(conn: &Connection, anime: &Anime) -> Result<i64, rusqlite::Error> {
@@ -11,8 +11,8 @@ pub fn insert_anime(conn: &Connection, anime: &Anime) -> Result<i64, rusqlite::E
     let media_id = tx.last_insert_rowid();
 
     tx.execute(
-        "INSERT INTO anime (media_id, al_id, title, format, season, seasonYear, source, synonyms)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        "INSERT INTO anime (media_id, al_id, title, format, season, seasonYear, source, synonyms, cover_image_small)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         rusqlite::params![
             media_id,
             anime.id,
@@ -21,7 +21,8 @@ pub fn insert_anime(conn: &Connection, anime: &Anime) -> Result<i64, rusqlite::E
             anime.season.as_ref().map(|s| s.to_string()),
             anime.season_year,
             anime.source.as_ref().map(|s| s.to_string()),
-            synonyms
+            synonyms,
+            anime.cover_image_small
         ],
     )?;
 
@@ -30,7 +31,7 @@ pub fn insert_anime(conn: &Connection, anime: &Anime) -> Result<i64, rusqlite::E
 }
 
 pub fn insert_resource(conn: &Connection, url: &str, resource_title: &str, resource_type: &ResourceType,
-     resource_synopsis: Option<&str>, resource_language: Option<&Language>, resource_author: Option<&str>) -> Result<i64, rusqlite::Error> {
+    resource_synopsis: Option<&str>, resource_language: Option<&Language>, resource_author: Option<&str>) -> Result<i64, rusqlite::Error> {
     conn.execute(
         "INSERT INTO resources (link, resource_title, resource_synopsis, resource_type, resource_language, author)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
@@ -66,7 +67,7 @@ pub fn insert_resource_media(conn: &Connection, resource_id: i32, media_id: i64)
 
 pub fn get_anime_by_al_id(conn: &Connection, al_id: i32) -> Result<Option<Anime>, rusqlite::Error> {
     let mut stmt = conn.prepare(
-        "SELECT al_id, title, format, season, seasonYear, source, synonyms FROM anime WHERE al_id = ?1"
+        "SELECT al_id, title, format, season, seasonYear, source, synonyms, cover_image_small FROM anime WHERE al_id = ?1"
     )?;
     let mut rows = stmt.query(rusqlite::params![al_id])?;
     match rows.next()? {
@@ -85,10 +86,24 @@ pub fn get_anime_by_al_id(conn: &Connection, al_id: i32) -> Result<Option<Anime>
                 synonyms: row.get::<_, Option<String>>(6)?
                     .map(|s| s.split(',').map(String::from).collect())
                     .unwrap_or_default(),
+                cover_image_small: row.get::<_, Option<String>>(7)?.and_then(|s| s.parse().ok()),
             }))
         },
         None => Ok(None),
     }
+}
+
+pub fn get_anime_id_by_name(conn: &Connection, anime_name: &str) -> Result<Option<i32>, rusqlite::Error> {
+    let media_id: Option<i32> = conn.query_row(
+        "SELECT al_id FROM anime
+        WHERE json_extract(title, '$.romaji') = ?1
+            OR json_extract(title, '$.english') = ?1
+            OR json_extract(title, '$.native') = ?1
+        LIMIT 1",
+        params![anime_name],
+        |row| row.get(0),
+    ).optional()?;
+    Ok(media_id)
 }
 
 fn get_people_for_resource(conn: &Connection, resource_id: i64) -> Result<Vec<String>, rusqlite::Error> {
@@ -153,4 +168,26 @@ pub fn get_resources_for_anime(conn: &Connection, al_id: i32) -> Result<Vec<Reso
     }
 
     Ok(resources)
+}
+
+pub fn get_english_and_romaji_titles(conn: &Connection) -> Result<Vec<String>, rusqlite::Error> {
+    let mut stmt = conn.prepare("SELECT title FROM anime;")?;
+    let rows = stmt.query_map(rusqlite::params![], |row| {
+        let raw: String = row.get(0)?;
+        Ok(raw)
+    })?;
+    let mut titles = Vec::new();
+    for raw in rows {
+        let raw = raw?;
+        if let Ok(parsed) = serde_json::from_str::<Title>(&raw) {
+            if let Some(romaji) = parsed.romaji {
+                titles.push(romaji);
+            }
+            if let Some(english) = parsed.english {
+                titles.push(english);
+            }
+        }
+    }
+
+    Ok(titles)
 }
