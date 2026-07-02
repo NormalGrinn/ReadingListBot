@@ -200,6 +200,7 @@ impl std::str::FromStr for ResourceType {
         match s {
             "INTERVIEW" => Ok(ResourceType::INTERVIEW),
             "ANALYSIS" => Ok(ResourceType::ANALYSIS),
+            "StaffBlog" => Ok(ResourceType::StaffBlog),
             _ => Err(format!("Unknown resource type: {}", s)),
         }
     }
