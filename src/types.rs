@@ -57,8 +57,9 @@ pub enum MediaSource {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Media {
-    Anime(Anime),
+pub struct RelatedMedia {
+    pub title: String,
+    pub media_type: MediaType,
 }
 
 #[derive(Debug, Serialize, Deserialize, ChoiceParameter)]
@@ -89,14 +90,15 @@ pub struct Anime {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Resource {
+    pub resource_id: i32,
     pub link: String,
     pub title: String,
     pub synopsis: Option<String>,
     pub resource_type: ResourceType,
-    pub langauge: Option<Language>,
+    pub language: Option<Language>,
     pub author: Option<String>,
     pub people: Vec<String>,
-    pub related_media: Option<Vec<Media>>,
+    pub related_media: Option<Vec<RelatedMedia>>,
     pub tags: Vec<String>,
 }
 

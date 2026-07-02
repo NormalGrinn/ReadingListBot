@@ -55,6 +55,8 @@ async fn main() {
                 commands::add_resource::add_resource(),
                 commands::show_anime::show_anime(),
                 commands::link_resource::link_resource(),
+                commands::show_resource::show_resource(),
+                commands::list_resources::list_resources(),
             ],
             ..Default::default()
         })

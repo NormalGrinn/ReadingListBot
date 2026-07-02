@@ -1,12 +1,12 @@
 use crate::types::*;
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 impl std::fmt::Display for ResourceType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            ResourceType::INTERVIEW => "Interview",
-            ResourceType::ANALYSIS => "Analysis",
-            ResourceType::StaffBlog => "Staff Blog",
+            ResourceType::INTERVIEW => "INTERVIEW",
+            ResourceType::ANALYSIS => "ANALYSIS",
+            ResourceType::StaffBlog => "StaffBlog",
         };
         write!(f, "{}", s)
     }
@@ -75,17 +75,23 @@ impl std::fmt::Display for MediaSource {
     }
 }
 
+impl fmt::Display for Title {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let title = self
+            .romaji
+            .as_deref()
+            .or(self.english.as_deref())
+            .or(self.native.as_deref())
+            .unwrap_or("Unknown Title");
+        write!(f, "{}", title)
+    }
+}
+
 impl fmt::Display for Anime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let id = format!("{}", self.id);
 
-        let title = self
-            .title
-            .english
-            .as_deref()
-            .or(self.title.romaji.as_deref())
-            .or(self.title.native.as_deref())
-            .unwrap_or("Unknown Title");
+        let title = self.title.to_string();
 
         let format = match &self.format {
             Some(fm) => format!("{fm:?}"),
@@ -195,6 +201,25 @@ impl std::str::FromStr for ResourceType {
             "INTERVIEW" => Ok(ResourceType::INTERVIEW),
             "ANALYSIS" => Ok(ResourceType::ANALYSIS),
             _ => Err(format!("Unknown resource type: {}", s)),
+        }
+    }
+}
+
+impl fmt::Display for MediaType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MediaType::ANIME => write!(f, "ANIME"),
+        }
+    }
+}
+
+impl FromStr for MediaType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ANIME" => Ok(MediaType::ANIME),
+            other => Err(format!("Invalid media type: {}", other)),
         }
     }
 }

@@ -4,11 +4,20 @@ use serenity::builder::{CreateEmbed, CreateEmbedFooter};
 use serenity::model::colour::Colour;
 
 
-use crate::types::{Format, MediaSource, Season, Title};
+use crate::types::{Format, MediaSource, Resource, Season, Title};
 use crate::{Context, Error};
 
 const MAX_DESCRIPTION_CHARS: usize = 3800; // margin under Discord's 4096 cap
-const MAX_LINES_PER_PAGE: usize = 15;
+const MAX_LINES_PER_PAGE: usize = 30;
+const MAX_FIELD_VALUE: usize = 1000;
+
+fn truncate_to_chars(s: &str, max_chars: usize) -> String {
+    if s.chars().count() <= max_chars {
+        s.to_string()
+    } else {
+        s.chars().take(max_chars).collect()
+    }
+}
 
 pub async fn is_add_authorized(ctx: Context<'_>) -> Result<bool, Error> {
     if !ctx.data().add_users.contains(&ctx.author().id.get()) {
@@ -18,17 +27,46 @@ pub async fn is_add_authorized(ctx: Context<'_>) -> Result<bool, Error> {
     Ok(true)
 }
 
-pub fn create_base_anime_embed(title: Title, id: i32, format: Option<Format>, season: Option<Season>, 
+pub fn create_resource_show_embed(r: Resource) -> CreateEmbed {
+    let mut embed = CreateEmbed::new()
+        .title(r.title)
+        .color(Colour::MAGENTA)
+        .field("Link", r.link, false)
+        .field("Resource ID", r.resource_id.to_string(), true)
+        .field("Resource type", r.resource_type.to_string(), true);
+    if let Some(synopsis) = r.synopsis { embed = embed.description(truncate_to_chars(&synopsis, MAX_DESCRIPTION_CHARS)); };
+    if let Some(langauge) = r.language { embed = embed.field("Language", langauge.to_string(), true) };
+    if let Some(related_media) = r.related_media {
+        if !related_media.is_empty() {
+            let mut media: String = related_media
+                .iter()
+                .map(|m| format!("{} ({})", m.title, m.media_type))
+                .collect::<Vec<_>>()
+                .join("\n");
+            media = truncate_to_chars(&media, MAX_FIELD_VALUE);
+            embed = embed.field("Related media", media, true);
+        }
+    }
+
+    if !r.people.is_empty() {
+        let people = r.people.join(", ");
+        embed = embed.field("People", truncate_to_chars(&people, MAX_FIELD_VALUE), true);
+    }
+    if !r.tags.is_empty() {
+        let tags = r.tags.join(", ");
+        embed = embed.field("Tags", truncate_to_chars(&tags, MAX_FIELD_VALUE), true);
+    }
+    embed
+}
+
+pub fn create_base_anime_embed(title: Title, media_id: i32, al_id: i32, format: Option<Format>, season: Option<Season>, 
                                source: Option<MediaSource>, synonyms: Vec<String>, cover_image: Option<String>) -> CreateEmbed {
-    let display_title = title
-        .romaji
-        .clone()
-        .or_else(|| title.english.clone())
-        .unwrap_or_else(|| "Unknown Title".to_string());
+    let display_title = title.to_string();
     let mut embed = CreateEmbed::new()
         .title(display_title)
         .colour(Colour::MAGENTA)
-        .field("AL ID", id.to_string(), true);
+        .field("Media ID", media_id.to_string(), true)
+        .field("AL ID", al_id.to_string(), true);
     if let Some(cover_image) = cover_image { embed = embed.thumbnail(cover_image)}
     if let Some(format) = format { embed = embed.field("Format", format.to_string(), true); }
     if let Some(season) = season { embed = embed.field("Season", season.to_string(), true); }
@@ -107,4 +145,24 @@ pub fn fuzzy_autocomplete<'a>(names: &[String], partial: &str) -> Vec<String> {
         .map(|(s, _)| s)
         .take(25)
         .collect()
+}
+
+pub fn nav_row(page: usize, total: usize) -> serenity::builder::CreateActionRow {
+    serenity::builder::CreateActionRow::Buttons(vec![
+        serenity::builder::CreateButton::new("prev_page")
+            .label("◀ Prev")
+            .style(serenity::model::application::ButtonStyle::Secondary)
+            .disabled(page == 0),
+        serenity::builder::CreateButton::new("next_page")
+            .label("Next ▶")
+            .style(serenity::model::application::ButtonStyle::Secondary)
+            .disabled(page + 1 >= total),
+    ])
+}
+
+pub fn nav_row_disabled() -> serenity::builder::CreateActionRow {
+    serenity::builder::CreateActionRow::Buttons(vec![
+        serenity::builder::CreateButton::new("prev_page").label("◀ Prev").style(serenity::model::application::ButtonStyle::Secondary).disabled(true),
+        serenity::builder::CreateButton::new("next_page").label("Next ▶").style(serenity::model::application::ButtonStyle::Secondary).disabled(true),
+    ])
 }

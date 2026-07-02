@@ -16,6 +16,11 @@ pub async fn add_resource(
 
     if !is_add_authorized(ctx).await? { return Ok(()) }
 
+    if resource_title.len() > 100 {
+        ctx.send(CreateReply::default().content("Title over 100 characters").ephemeral(true)).await?;
+        return Ok(());
+    }
+
     let result = {
         let conn = ctx.data().db.lock().await;
         insert_resource(

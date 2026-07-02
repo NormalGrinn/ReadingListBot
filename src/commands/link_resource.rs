@@ -7,7 +7,7 @@ use crate::{Context, Error, database::{get_media_id_by_al_id, insert_resource_me
 pub async fn link_resource(
     ctx: Context<'_>,
     #[description = "The type of the media you want to link"] media_type: MediaType,
-    #[description = "The ID of the media you want to link"] media_id: i32,
+    #[description = "The ID of the media you want to link (not using the media ID, but rather the AL ID)"] media_id: i32,
     #[description = "The ID of the resource you want to link"] resource_id: i32,
 ) -> Result<(), Error> {
 

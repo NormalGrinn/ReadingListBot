@@ -4,7 +4,7 @@ use poise::CreateReply;
 use rusqlite::Result;
 use serenity::futures::{self, Stream};
 
-use crate::{Context, Error, database::{self, get_anime_by_al_id, get_resources_for_anime}, helpers::{self, fuzzy_autocomplete}};
+use crate::{Context, Error, database::{self, get_anime_by_al_id, get_resources_for_anime}, helpers::{self, fuzzy_autocomplete, nav_row, nav_row_disabled}};
 
 struct EmbedResource {
     title: String,
@@ -57,9 +57,11 @@ pub async fn show_anime(
             return Ok(())
         },
     }
+    let media_id: i32;
     let (anime, resources) = {
-        let anime = get_anime_by_al_id(&conn, anime_id)?;
+        let (m_id, anime) = get_anime_by_al_id(&conn, anime_id)?;
         let resources = get_resources_for_anime(&conn, anime_id)?;
+        media_id = m_id;
         (anime, resources)
     };
     drop(conn);
@@ -73,7 +75,7 @@ pub async fn show_anime(
     };
 
     let base_embed = helpers::create_base_anime_embed(
-        anime.title, anime.id, anime.format, anime.season, anime.source,
+        anime.title, media_id, anime.id, anime.format, anime.season, anime.source,
         anime.synonyms, anime.cover_image_small,
     );
 
@@ -138,24 +140,4 @@ pub async fn show_anime(
 
 
     Ok(())
-}
-
-fn nav_row(page: usize, total: usize) -> serenity::builder::CreateActionRow {
-    serenity::builder::CreateActionRow::Buttons(vec![
-        serenity::builder::CreateButton::new("prev_page")
-            .label("◀ Prev")
-            .style(serenity::model::application::ButtonStyle::Secondary)
-            .disabled(page == 0),
-        serenity::builder::CreateButton::new("next_page")
-            .label("Next ▶")
-            .style(serenity::model::application::ButtonStyle::Secondary)
-            .disabled(page + 1 >= total),
-    ])
-}
-
-fn nav_row_disabled() -> serenity::builder::CreateActionRow {
-    serenity::builder::CreateActionRow::Buttons(vec![
-        serenity::builder::CreateButton::new("prev_page").label("◀ Prev").style(serenity::model::application::ButtonStyle::Secondary).disabled(true),
-        serenity::builder::CreateButton::new("next_page").label("Next ▶").style(serenity::model::application::ButtonStyle::Secondary).disabled(true),
-    ])
 }
