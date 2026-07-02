@@ -29,7 +29,8 @@ async fn autocomplete_anime<'a>(
     ctx: Context<'_>,
     partial: &'a str,
 ) -> impl Stream<Item = String> + 'a {
-    let guesses = fuzzy_autocomplete(&ctx.data().anime_names, partial);
+    let mut guesses = fuzzy_autocomplete(&ctx.data().anime_names, partial);
+    guesses.dedup();
     futures::stream::iter(guesses)
 }
 
