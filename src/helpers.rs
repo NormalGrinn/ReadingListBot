@@ -59,9 +59,10 @@ pub fn create_resource_show_embed(r: Resource) -> CreateEmbed {
     embed
 }
 
-pub fn create_base_anime_embed(title: Title, media_id: i32, al_id: i32, format: Option<Format>, season: Option<Season>, 
+pub fn create_base_anime_embed(title: Title, media_id: i32, al_id: i32, format: Option<Format>, season: Option<Season>, year: Option<i32>,
                                source: Option<MediaSource>, synonyms: Vec<String>, cover_image: Option<String>) -> CreateEmbed {
     let display_title = title.to_string();
+
     let mut embed = CreateEmbed::new()
         .title(display_title)
         .colour(Colour::MAGENTA)
@@ -69,7 +70,10 @@ pub fn create_base_anime_embed(title: Title, media_id: i32, al_id: i32, format: 
         .field("AL ID", al_id.to_string(), true);
     if let Some(cover_image) = cover_image { embed = embed.thumbnail(cover_image)}
     if let Some(format) = format { embed = embed.field("Format", format.to_string(), true); }
-    if let Some(season) = season { embed = embed.field("Season", season.to_string(), true); }
+    if !season.is_none() && !year.is_none() {
+        let season_year = format!("{} {}", season.unwrap(), year.unwrap());
+        embed = embed.field("Season", season_year, true);
+    }
     if let Some(source) = source { embed = embed.field("Source", source.to_string(), true); }
     if !synonyms.is_empty() {
         let synonyms_text = synonyms.join(", ");

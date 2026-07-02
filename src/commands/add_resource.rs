@@ -22,7 +22,7 @@ pub async fn add_resource(
     }
 
     let result = {
-        let conn = ctx.data().db.lock().await;
+        let conn: tokio::sync::MutexGuard<'_, rusqlite::Connection> = ctx.data().db.lock().await;
         insert_resource(
             &conn,
             &url,
@@ -36,6 +36,9 @@ pub async fn add_resource(
 
     match result {
         Ok(_) => {
+            let mut resource_titles = ctx.data().resource_titles.lock().await;
+            resource_titles.push(resource_title.clone());
+            resource_titles.sort();
             ctx.send(CreateReply::default().content("Successfully added resource to the database").ephemeral(true)).await?;
         },
         Err(e) => {

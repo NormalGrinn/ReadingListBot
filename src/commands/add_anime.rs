@@ -17,6 +17,10 @@ pub async fn add_anime(
             let conn = ctx.data().db.lock().await;
                 match insert_anime(&conn, &anime) {
                 Ok(_) => {
+                    let mut anime_names = ctx.data().anime_names.lock().await;
+                    anime_names.push(anime.title.to_string());
+                    anime_names.sort();
+                    anime_names.dedup();
                     let response = format!("Added anime: {}", anime);
                     ctx.send(CreateReply::default().content(response).ephemeral(true)).await?;
                 },

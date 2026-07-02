@@ -16,8 +16,8 @@ mod helpers;
 struct Data {
     pub db: Arc<Mutex<rusqlite::Connection>>,
     pub add_users: Vec<u64>,
-    pub anime_names: Vec<String>,
-    pub resource_titles: Vec<String>,
+    pub anime_names: Arc<Mutex<Vec<String>>>,
+    pub resource_titles: Arc<Mutex<Vec<String>>>,
 } // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -44,8 +44,17 @@ async fn main() {
     let data = Data {
         db: Arc::new(Mutex::new(conn)),
         add_users,
-        anime_names,
-        resource_titles,
+        anime_names: Arc::new(Mutex::new({
+            let mut v = anime_names;
+            v.sort();
+            v.dedup();
+            v
+        })),
+        resource_titles: Arc::new(Mutex::new({
+            let mut v = resource_titles;
+            v.sort();
+            v
+        })),
     };
 
     let framework = poise::Framework::builder()

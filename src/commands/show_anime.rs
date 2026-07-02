@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use poise::CreateReply;
 use rusqlite::Result;
-use serenity::futures::{self, Stream};
+use serenity::futures::{self, Stream, stream};
 
 use crate::{Context, Error, database::{self, get_anime_by_al_id, get_resources_for_anime}, helpers::{self, fuzzy_autocomplete, nav_row, nav_row_disabled}};
 
@@ -29,9 +29,13 @@ async fn autocomplete_anime<'a>(
     ctx: Context<'_>,
     partial: &'a str,
 ) -> impl Stream<Item = String> + 'a {
-    let mut guesses = fuzzy_autocomplete(&ctx.data().anime_names, partial);
-    guesses.dedup();
-    futures::stream::iter(guesses)
+    let anime_names = {
+        let guard = ctx.data().anime_names.lock().await;
+        guard.clone()
+    };
+
+    let guesses = fuzzy_autocomplete(&anime_names, partial);
+    stream::iter(guesses)
 }
 
 
@@ -76,7 +80,7 @@ pub async fn show_anime(
     };
 
     let base_embed = helpers::create_base_anime_embed(
-        anime.title, media_id, anime.id, anime.format, anime.season, anime.source,
+        anime.title, media_id, anime.id, anime.format, anime.season, anime.season_year, anime.source,
         anime.synonyms, anime.cover_image_small,
     );
 

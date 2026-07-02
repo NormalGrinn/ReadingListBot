@@ -4,12 +4,19 @@ use serenity::futures::{self, Stream};
 
 use crate::{Context, Error, database::{get_resource_by_id, get_resource_id_by_name}, helpers::{create_resource_show_embed, fuzzy_autocomplete}};
 
+use futures::stream::{self};
+
 async fn autocomplete_resource<'a>(
     ctx: Context<'_>,
     partial: &'a str,
 ) -> impl Stream<Item = String> + 'a {
-    let guesses = fuzzy_autocomplete(&ctx.data().resource_titles, partial);
-    futures::stream::iter(guesses)
+    let resource_titles = {
+        let guard = ctx.data().resource_titles.lock().await;
+        guard.clone()
+    };
+
+    let guesses = fuzzy_autocomplete(&resource_titles, partial);
+    stream::iter(guesses)
 }
 
 #[poise::command(prefix_command, track_edits, slash_command)]
