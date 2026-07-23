@@ -289,3 +289,67 @@ pub fn get_all_resource_ids_and_titles(conn: &Connection) -> Result<Vec<(i32, St
     })?;
     rows.collect()
 }
+
+pub fn get_all_resource_ids_and_titles_filtered(conn: &Connection) -> Result<Vec<(i32, String)>, rusqlite::Error> {
+let mut stmt = conn.prepare(
+    "
+    SELECT r.resource_id, r.resource_title
+    FROM resources r
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM resource_media rm
+        WHERE rm.resource_id = r.resource_id
+    );
+    ")?;
+
+    let resources: Vec<(i32, String)> = stmt
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(resources)
+}
+
+pub fn unlink_media_resource(conn: &Connection, resource_id: i32, media_id: i32, media_type: MediaType) -> rusqlite::Result<()> {
+    let id: i64 = match media_type {
+        MediaType::ANIME => {
+            match get_media_id_by_al_id(&conn, media_id) {
+                Ok(Some(id)) => id,
+                _ => return Ok(())
+            }
+        }
+    };
+    let sql: &str = "
+    DELETE FROM resource_media
+    WHERE resource_id = ?1 AND media_id = ?2;
+    ";
+
+    conn.execute(sql, params![resource_id, id])?;
+
+    Ok(())
+}
+
+pub fn get_resource_titles_for_anime(
+    conn: &Connection,
+    al_id: i32,
+) -> Result<Vec<(i32, String)>, rusqlite::Error> {
+    let mut stmt = conn.prepare(
+        "
+        SELECT r.resource_id, r.resource_title
+        FROM resources r
+        JOIN resource_media rm ON r.resource_id = rm.resource_id
+        JOIN anime a ON rm.media_id = a.media_id
+        WHERE a.al_id = ?1
+        ORDER BY r.resource_title
+        "
+    )?;
+
+    let rows = stmt.query_map(params![al_id], |row| {
+        Ok((
+            row.get::<_, i32>(0)?,
+            row.get::<_, String>(1)?,
+        ))
+    })?;
+
+    rows.collect()
+}

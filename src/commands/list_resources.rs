@@ -4,16 +4,23 @@ use poise::CreateReply;
 use rusqlite::Result;
 use serenity::model::Colour;
 
-use crate::{Context, Error, database::get_all_resource_ids_and_titles, helpers::{build_resource_embeds, nav_row, nav_row_disabled, paginate_lines}};
+use crate::{Context, Error, database::{self}, helpers::{build_resource_embeds, nav_row, nav_row_disabled, paginate_lines}};
 
-const PAGE_SIZE: usize = 10;
+// const PAGE_SIZE: usize = 10;
 
 #[poise::command(prefix_command, track_edits, slash_command)]
 pub async fn list_resources(
     ctx: Context<'_>,
+    #[description = "Should resources that are already linked be filtered?"] filter: Option<bool>,
 ) -> Result<(), Error> {
     let conn = ctx.data().db.lock().await;
-    let resources = get_all_resource_ids_and_titles(&conn)?;
+    let resources: Vec<(i32, String)>;
+    let f = filter.unwrap_or(false);
+    if f {
+        resources = database::get_all_resource_ids_and_titles_filtered(&conn)?;
+    } else {
+        resources = database::get_all_resource_ids_and_titles(&conn)?;
+    }
     drop(conn);
 
     if resources.is_empty() {

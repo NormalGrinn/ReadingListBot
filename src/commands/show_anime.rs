@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use poise::CreateReply;
 use rusqlite::Result;
-use serenity::futures::{self, Stream, stream};
+use serenity::futures::{Stream, stream};
 
 use crate::{Context, Error, database::{self, get_anime_by_al_id, get_resources_for_anime}, helpers::{self, fuzzy_autocomplete, nav_row, nav_row_disabled}};
 

@@ -27,6 +27,14 @@ pub async fn is_add_authorized(ctx: Context<'_>) -> Result<bool, Error> {
     Ok(true)
 }
 
+pub async fn is_remove_authorized(ctx: Context<'_>) -> Result<bool, Error> {
+    if !ctx.data().remove_users.contains(&ctx.author().id.get()) {
+        ctx.send(CreateReply::default().content("You are not authorized to use this command.").ephemeral(true)).await?;
+        return Ok(false);
+    }
+    Ok(true)
+}
+
 pub fn create_resource_show_embed(r: Resource) -> CreateEmbed {
     let mut embed = CreateEmbed::new()
         .title(r.title)

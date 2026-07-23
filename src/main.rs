@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env, sync::Arc};
+use std::{env, sync::Arc};
 
 use poise::serenity_prelude as serenity;
 use dotenvy::dotenv;
@@ -16,6 +16,7 @@ mod helpers;
 struct Data {
     pub db: Arc<Mutex<rusqlite::Connection>>,
     pub add_users: Vec<u64>,
+    pub remove_users: Vec<u64>,
     pub anime_names: Arc<Mutex<Vec<String>>>,
     pub resource_titles: Arc<Mutex<Vec<String>>>,
 } // User data, which is stored and accessible in all command invocations
@@ -27,6 +28,11 @@ async fn main() {
     dotenv().ok();
     let conn = rusqlite::Connection::open("databases/resources.db").expect("Failed to open database");
     let add_users = env::var("ADD_USERS")
+        .unwrap_or_default()
+        .split(',')
+        .filter_map(|id| id.trim().parse().ok())
+        .collect();
+    let remove_users = env::var("REMOVE_USERS")
         .unwrap_or_default()
         .split(',')
         .filter_map(|id| id.trim().parse().ok())
@@ -44,6 +50,7 @@ async fn main() {
     let data = Data {
         db: Arc::new(Mutex::new(conn)),
         add_users,
+        remove_users,
         anime_names: Arc::new(Mutex::new({
             let mut v = anime_names;
             v.sort();
@@ -66,6 +73,7 @@ async fn main() {
                 commands::link_resource::link_resource(),
                 commands::show_resource::show_resource(),
                 commands::list_resources::list_resources(),
+                commands::unlink_resource::unlink_resource(),
             ],
             ..Default::default()
         })
